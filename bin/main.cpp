@@ -5,15 +5,16 @@
 #include <vector>
 #include <set>
 #include <ranges>
+#include <map>
+
 
 int main() {
-    std::set<int> a = {1,2,3};
     
-//    for (int r : a | drop(1)) {
-//        std::cout << r;
-//    }
+    std::map<std::string, int> a = {{"CPU", 10}, {"GPU", 15}, {"RAM", 20}};
 
-//    for (int t : a | std::ranges::views::drop(1)) {
-//        std::cout << t;
-//    }
+    for (auto r : a | keys() ) {
+        std::cout << r;
+    }
+
+
 }
