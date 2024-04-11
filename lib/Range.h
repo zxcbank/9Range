@@ -89,6 +89,126 @@ class KeysIteratorAdaptor {
         }
         
 };
+template <class It, class func>
+    class FilterIteratorAdaptor {
+        public:
+            using value_type = typename It::value_type;
+            using pointer = value_type*;
+            using reference = value_type&;
+            using iterator_category = typename It::iterator_category;
+            using difference_type = std::ptrdiff_t;
+            
+            It __main_it;
+            It __end_it;
+            func __f;
+            
+            explicit FilterIteratorAdaptor(const It& Xb, func foo, const It& Xend){
+                __main_it = Xb;
+                __end_it = Xend;
+                __f = foo;
+            }
+            explicit FilterIteratorAdaptor() = default;
+            
+            reference operator * () {
+                return *__main_it;
+            }
+            
+            auto operator -> () {
+                return (*this);
+            }
+            
+            FilterIteratorAdaptor operator++ () {
+                ++__main_it;
+                while (!__f(*__main_it) && (__end_it != __main_it)) {
+                    ++*this;
+                }
+                return *this;
+            }
+            
+            FilterIteratorAdaptor operator-- () {
+                --__main_it;
+                return *this;
+            }
+            
+            FilterIteratorAdaptor operator++ (int) {
+                FilterIteratorAdaptor t = *this;
+                ++*this;
+                return t;
+            }
+            
+            FilterIteratorAdaptor operator-- (int) {
+                FilterIteratorAdaptor t = *this;
+                --*this;
+                return t;
+            }
+            
+            bool operator == (const FilterIteratorAdaptor& I2) {
+                return (this->__main_it == I2.__main_it);
+            }
+            
+            bool operator != (const FilterIteratorAdaptor& I2){
+                return !(this->__main_it == I2.__main_it);
+            }
+    };
+
+template <class It, class func>
+    class IteratorAdaptor {
+        public:
+            using value_type = typename It::value_type;
+            using pointer = value_type*;
+            using reference = value_type&;
+            using iterator_category = typename It::iterator_category;
+            using difference_type = std::ptrdiff_t;
+            
+            It __main_it;
+            func __f;
+            
+            explicit IteratorAdaptor(const It& Xb, func foo){
+                __main_it = Xb;
+                __f = foo;
+            }
+            explicit IteratorAdaptor() = default;
+            
+            reference operator * () {
+                auto t = *__main_it;
+                *__main_it = __f(t);
+                return *__main_it;
+            }
+            
+            auto operator -> () {
+                return (*this);
+            }
+            
+            IteratorAdaptor operator++ () {
+                ++__main_it;
+                return *this;
+            }
+            
+            IteratorAdaptor operator-- () {
+                --__main_it;
+                return *this;
+            }
+            
+            IteratorAdaptor operator++ (int) {
+                IteratorAdaptor t = *this;
+                ++*this;
+                return t;
+            }
+            
+            IteratorAdaptor operator-- (int) {
+                IteratorAdaptor t = *this;
+                --*this;
+                return t;
+            }
+            
+            bool operator == (const IteratorAdaptor& I2) {
+                return (this->__main_it == I2.__main_it);
+            }
+            
+            bool operator != (const IteratorAdaptor& I2){
+                return !(*this == I2);
+            }
+};
 
 template <class It>
     class ValuesIteratorAdaptor {
@@ -180,6 +300,7 @@ class RangeValues {
 template<class func = std::identity>
 class RangeTransform {
     public:
+        using function = func;
         func __f;
         RangeTransform(func f) : __f(f) {} ;
         RangeTransform() = default;
@@ -190,6 +311,22 @@ class RangeTransform {
             return;
         }
 };
+
+template<class func = std::identity>
+    class RangeFilter {
+        public:
+            using function = func;
+            
+            func __f;
+            RangeFilter(func f) : __f(f) {} ;
+            RangeFilter() = default;
+            
+            template<class func2>
+            auto operator() (){
+                
+                return;
+            }
+    };
 
 
 template <class ContainerT, class OtherTypeT>
@@ -231,8 +368,18 @@ auto operator | (ContainerT&& X, const OtherTypeT& Y) {
         Range R(T, T1);
         
         return R;
-    } else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<>>) {
+    } else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<typename OtherTypeT::function>>) {
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f);
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f);
+        
+        Range R(T, T1);
+        return R;
+    } else if constexpr (std::is_same_v<OtherTypeT, RangeFilter<typename OtherTypeT::function>>) {
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f, X.end());
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f, X.end());
     
+        Range R(T, T1);
+        return R;
     }
 }
 
@@ -276,8 +423,18 @@ auto operator | (ContainerT& X, const OtherTypeT& Y) {
         Range R(T, T1);
         
         return R;
-    } else if constexpr (std::is_same_v<OtherTypeT, RangeTransform>) {
-    
+    } else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<typename OtherTypeT::function>>) {
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f);
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f);
+        
+        Range R(T, T1);
+        return R;
+    } else if constexpr (std::is_same_v<OtherTypeT, RangeFilter<typename OtherTypeT::function>>) {
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f, X.end());
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f, X.end());
+        
+        Range R(T, T1);
+        return R;
     }
 }
 
@@ -307,8 +464,14 @@ RangeValues values() {
 }
 
 template<class func>
-RangeTransform<func> transform(const func f) {
+RangeTransform<func> transform(func f) {
     RangeTransform obj(f);
+    return obj;
+}
+
+template<class func>
+RangeFilter<func> filter(func f) {
+    RangeFilter obj(f);
     return obj;
 }
 
