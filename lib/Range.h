@@ -9,28 +9,27 @@
 #include <iterator>
 #include <vector>
 #include <functional>
+#pragma once
 
-template <class ContainerT>
-    concept AvailabilityOfReverseIterator =
-    std::bidirectional_iterator<class ContainerT::reverse_iterator>;
+
 
 template <class It>
 class Range {
     public:
-        It __begin;
-        It __end;
+        It _begin;
+        It _end;
         
         explicit Range(const It& Xb, const It& Xe) {
-            __begin = Xb;
-            __end = Xe;
+            _begin = Xb;
+            _end = Xe;
         }
         
         auto begin() const {
-            return __begin;
+            return _begin;
         }
         
         auto end() const {
-            return __end;
+            return _end;
         }
 };
 
@@ -43,15 +42,15 @@ class KeysIteratorAdaptor {
         using iterator_category = typename It::iterator_category;
         using difference_type = std::ptrdiff_t;
         
-        It __main_it;
+        It _main_it;
         
         explicit KeysIteratorAdaptor(const It& Xb){
-            __main_it = Xb;
+            _main_it = Xb;
         }
         explicit KeysIteratorAdaptor() = default;
         
         reference operator * () {
-            return __main_it->first;
+            return _main_it->first;
         }
         
         auto operator -> () {
@@ -59,12 +58,12 @@ class KeysIteratorAdaptor {
         }
         
         KeysIteratorAdaptor operator++ () {
-            ++__main_it;
+            ++_main_it;
             return *this;
         }
         
         KeysIteratorAdaptor operator-- () {
-            --__main_it;
+            --_main_it;
             return *this;
         }
         
@@ -81,7 +80,7 @@ class KeysIteratorAdaptor {
         }
         
         bool operator == (const KeysIteratorAdaptor& I2) {
-            return (this->__main_it == I2.__main_it);
+            return (this->_main_it == I2._main_it);
         }
         
         bool operator != (const KeysIteratorAdaptor& I2){
@@ -98,19 +97,22 @@ template <class It, class func>
             using iterator_category = typename It::iterator_category;
             using difference_type = std::ptrdiff_t;
             
-            It __main_it;
-            It __end_it;
-            func __f;
+            It main_it;
+            It end_it;
+            func f;
             
             explicit FilterIteratorAdaptor(const It& Xb, func foo, const It& Xend){
-                __main_it = Xb;
-                __end_it = Xend;
-                __f = foo;
+                main_it = Xb;
+                end_it = Xend;
+                f = foo;
             }
             explicit FilterIteratorAdaptor() = default;
             
             reference operator * () {
-                return *__main_it;
+                if (!f(*main_it)) {
+                    ++*this;
+                }
+                return *main_it;
             }
             
             auto operator -> () {
@@ -118,15 +120,15 @@ template <class It, class func>
             }
             
             FilterIteratorAdaptor operator++ () {
-                ++__main_it;
-                while (!__f(*__main_it) && (__end_it != __main_it)) {
+                ++main_it;
+                while (!f(*main_it) && (end_it != main_it)) {
                     ++*this;
                 }
                 return *this;
             }
             
             FilterIteratorAdaptor operator-- () {
-                --__main_it;
+                --main_it;
                 return *this;
             }
             
@@ -143,11 +145,11 @@ template <class It, class func>
             }
             
             bool operator == (const FilterIteratorAdaptor& I2) {
-                return (this->__main_it == I2.__main_it);
+                return (this->main_it == I2.main_it);
             }
             
             bool operator != (const FilterIteratorAdaptor& I2){
-                return !(this->__main_it == I2.__main_it);
+                return !(this->main_it == I2.main_it);
             }
     };
 
@@ -160,19 +162,19 @@ template <class It, class func>
             using iterator_category = typename It::iterator_category;
             using difference_type = std::ptrdiff_t;
             
-            It __main_it;
-            func __f;
+            It main_it;
+            func f;
             
             explicit IteratorAdaptor(const It& Xb, func foo){
-                __main_it = Xb;
-                __f = foo;
+                main_it = Xb;
+                f = foo;
             }
-            explicit IteratorAdaptor() = default;
             
-            reference operator * () {
-                auto t = *__main_it;
-                *__main_it = __f(t);
-                return *__main_it;
+            IteratorAdaptor() = default;
+            
+            value_type operator * () {
+                
+                return f(*main_it);
             }
             
             auto operator -> () {
@@ -180,12 +182,12 @@ template <class It, class func>
             }
             
             IteratorAdaptor operator++ () {
-                ++__main_it;
+                ++main_it;
                 return *this;
             }
             
             IteratorAdaptor operator-- () {
-                --__main_it;
+                --main_it;
                 return *this;
             }
             
@@ -202,7 +204,7 @@ template <class It, class func>
             }
             
             bool operator == (const IteratorAdaptor& I2) {
-                return (this->__main_it == I2.__main_it);
+                return (this->main_it == I2.main_it);
             }
             
             bool operator != (const IteratorAdaptor& I2){
@@ -219,15 +221,15 @@ template <class It>
             using iterator_category = typename It::iterator_category;
             using difference_type = std::ptrdiff_t;
             
-            It __main_it;
+            It main_it;
             
-            explicit ValuesIteratorAdaptor(const It& Xb){ //TODO: придумать как короче итератор только с кейс
-                __main_it = Xb;
+            explicit ValuesIteratorAdaptor(const It& Xb){
+                main_it = Xb;
             }
             explicit ValuesIteratorAdaptor() = default;
             
             reference operator * () {
-                return __main_it->second;
+                return main_it->second;
             }
             
             auto operator -> () {
@@ -235,7 +237,7 @@ template <class It>
             }
             
             ValuesIteratorAdaptor& operator++ () {
-                ++__main_it;
+                ++main_it;
                 return *this;
             }
             
@@ -246,7 +248,7 @@ template <class It>
             }
             
             ValuesIteratorAdaptor& operator-- () {
-                --__main_it;
+                --main_it;
                 return *this;
             }
             
@@ -259,7 +261,7 @@ template <class It>
             }
             
             bool operator == (const ValuesIteratorAdaptor& I2) {
-                return (this->__main_it == I2.__main_it);
+                return (this->main_it == I2.main_it);
             }
             
             bool operator != (const ValuesIteratorAdaptor& I2){
@@ -275,16 +277,16 @@ class RangeReverse {
 
 class RangeDrop {
     public:
-        int __t;
+        int quantity;
         
-        explicit RangeDrop(int t) : __t(t){};
+        explicit RangeDrop(int t) : quantity(t){};
 };
 
 class RangeTake {
     public:
-        int __t;
+        int quantity;
         
-        explicit RangeTake(int t) : __t(t){};
+        explicit RangeTake(int t) : quantity(t){};
 };
 
 class RangeKeys {
@@ -297,12 +299,13 @@ class RangeValues {
         RangeValues() = default;
 };
 
+
 template<class func = std::identity>
 class RangeTransform {
     public:
         using function = func;
-        func __f;
-        RangeTransform(func f) : __f(f) {} ;
+        func foo;
+        explicit RangeTransform(func f) : foo(f) {} ;
         RangeTransform() = default;
         
         template<class func2>
@@ -317,8 +320,8 @@ template<class func = std::identity>
         public:
             using function = func;
             
-            func __f;
-            RangeFilter(func f) : __f(f) {} ;
+            func foo;
+            explicit RangeFilter(func f) : foo(f) {} ;
             RangeFilter() = default;
             
             template<class func2>
@@ -328,28 +331,37 @@ template<class func = std::identity>
             }
     };
 
+template<class U>
+    concept AcceptableTypeEasy = (std::is_same_v<U, RangeTake> ||
+        std::is_same_v<U, RangeDrop> ||
+            std::is_same_v<U, RangeReverse> ||
+                std::is_same_v<U, RangeKeys> ||
+                    std::is_same_v<U, RangeValues> ||
+                std::is_same_v<U, RangeTransform<typename U::function>> ||
+            std::is_same_v<U, RangeFilter<typename U::function>>);
 
-template <class ContainerT, class OtherTypeT>
+
+template <class ContainerT, AcceptableTypeEasy OtherTypeT>
 auto operator | (ContainerT&& X, const OtherTypeT& Y) {
     
     if constexpr(std::is_same_v<OtherTypeT, RangeDrop>) {
         Range T (X.begin(), X.end());
         int iter = 0;
         
-        while (iter < Y.__t && T.__begin != X.end()) {
+        while (iter < Y.quantity && T._begin != X.end()) {
             iter++;
-            ++T.__begin;
+            ++T._begin;
         }
         return T;
     } else if constexpr(std::is_same_v<OtherTypeT, RangeTake>) {
         Range T (X.begin(), X.end());
         int iter = 0;
         
-        T.__end = X.begin();
-        while (iter < Y.__t && T.__end != X.end()) {
+        T._end = X.begin();
+        while (iter < Y.quantity && T._end != X.end()) {
             
             iter++;
-            T.__end++;
+            T._end++;
         }
 
         return T;
@@ -368,42 +380,43 @@ auto operator | (ContainerT&& X, const OtherTypeT& Y) {
         Range R(T, T1);
         
         return R;
-    } else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<typename OtherTypeT::function>>) {
-        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f);
-        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f);
-        
+    }
+    else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<typename OtherTypeT::function>>) {
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.foo);
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.foo);
+
         Range R(T, T1);
         return R;
     } else if constexpr (std::is_same_v<OtherTypeT, RangeFilter<typename OtherTypeT::function>>) {
-        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f, X.end());
-        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f, X.end());
-    
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.foo, X.end());
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.foo, X.end());
+
         Range R(T, T1);
         return R;
     }
 }
 
-template <class ContainerT, class OtherTypeT>
+template <class ContainerT, AcceptableTypeEasy OtherTypeT>
 auto operator | (ContainerT& X, const OtherTypeT& Y) {
     
     if constexpr(std::is_same_v<OtherTypeT, RangeDrop>) {
         Range T (X.begin(), X.end());
         int iter = 0;
         
-        while (iter < Y.__t && T.__begin != X.end()) {
+        while (iter < Y.quantity && T._begin != X.end()) {
             iter++;
-            ++T.__begin;
+            ++T._begin;
         }
         return T;
     } else if constexpr(std::is_same_v<OtherTypeT, RangeTake>) {
         Range T (X.begin(), X.end());
         int iter = 0;
         
-        T.__end = X.begin();
-        while (iter < Y.__t && T.__end != X.end()) {
+        T._end = X.begin();
+        while (iter < Y.quantity && T._end != X.end()) {
             
             iter++;
-            T.__end++;
+            T._end++;
         }
         
         return T;
@@ -423,16 +436,17 @@ auto operator | (ContainerT& X, const OtherTypeT& Y) {
         Range R(T, T1);
         
         return R;
-    } else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<typename OtherTypeT::function>>) {
-        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f);
-        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f);
-        
+    }
+    else if constexpr (std::is_same_v<OtherTypeT, RangeTransform<typename OtherTypeT::function>>) {
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.foo);
+        IteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.foo);
+
         Range R(T, T1);
         return R;
     } else if constexpr (std::is_same_v<OtherTypeT, RangeFilter<typename OtherTypeT::function>>) {
-        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.__f, X.end());
-        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.__f, X.end());
-        
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T (X.begin(), Y.foo, X.end());
+        FilterIteratorAdaptor<typename ContainerT::iterator, typename OtherTypeT::function> T1 (X.end(), Y.foo, X.end());
+
         Range R(T, T1);
         return R;
     }
